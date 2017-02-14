@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -252,7 +253,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	// UpstreamZones
 	for name, upstreamList := range nginxVtx.UpstreamZones {
 		var total, one, two, three, four, five, inbytes, outbytes float64
-		for _, s := range upstreamList {
+		for i, s := range upstreamList {
 			total += float64(s.RequestCounter)
 			one += float64(s.Responses.OneXx)
 			two += float64(s.Responses.TwoXx)
@@ -263,7 +264,8 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 			inbytes += float64(s.InBytes)
 			outbytes += float64(s.OutBytes)
 
-			ch <- prometheus.MustNewConstMetric(e.upstreamMetrics["response"], prometheus.GaugeValue, float64(s.ResponseMsec), name, s.Server)
+			backend := fmt.Sprintf("%s-%s", s.Server, strconv.Itoa(i))
+			ch <- prometheus.MustNewConstMetric(e.upstreamMetrics["response"], prometheus.GaugeValue, float64(s.ResponseMsec), name, backend)
 		}
 
 		ch <- prometheus.MustNewConstMetric(e.upstreamMetrics["requests"], prometheus.CounterValue, total, name, "total")
